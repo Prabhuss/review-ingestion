@@ -1,71 +1,115 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Zuzu Review Ingestion and Query Lambdas (S3 -> SQS -> Lambda -> Neon)
+Description: Zuzu Review Ingestion (S3 -> SQS -> Lambda -> DB) + GET /reviews API. Only .json uploads trigger.
+
+Parameters:
+  ReviewsBucketName:
+    Type: String
+    Default: ""
+    Description: Optional bucket name. Leave empty to auto-generate.
+  DbUrl:
+    Type: String
+    Default: jdbc:postgresql://ep-mute-morning-a93nx86o-pooler.gwc.azure.neon.tech:5432/neondb?sslmode=require
+  DbUser:
+    Type: String
+    Default: neondb_owner
+  DbPassword:
+    Type: String
+    NoEcho: true
+    Default: npg_dBXJbY0lF2Qr
+  HibernateDdl:
+    Type: String
+    Default: validate
+  LogSql:
+    Type: String
+    Default: "false"
+
+Conditions:
+  UseProvidedBucketName: !Not [!Equals [!Ref ReviewsBucketName, ""]]
 
 Globals:
   Function:
     Runtime: java21
     MemorySize: 1536
     Timeout: 120
+    Architectures: [ x86_64 ]
     Environment:
       Variables:
-        DB_URL: jdbc:postgresql://ep-mute-morning-a93nx86o-pooler.gwc.azure.neon.tech:5432/neondb?sslmode=require
-        DB_USER: neondb_owner
-        DB_PASSWORD: npg_dBXJbY0lF2Qr
-        HIBERNATE_DDL: validate
-        # For schema updates, temporarily change to 'update' then back to 'validate'
+        DB_URL: !Ref DbUrl
+        DB_USER: !Ref DbUser
+        DB_PASSWORD: !Ref DbPassword
+        HIBERNATE_DDL: !Ref HibernateDdl
+        LOG_SQL: !Ref LogSql
 
 Resources:
+
+  # SQS DLQ
   IngestQueueDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub "${AWS::StackName}-review-ingest-dlq"
-      MessageRetentionPeriod: 1209600 # 14 days
+      QueueName: !Sub ${AWS::StackName}-review-ingest-dlq
 
+  # SQS main queue
   IngestQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub "${AWS::StackName}-review-ingest-queue"
+      QueueName: !Sub ${AWS::StackName}-review-ingest-queue
+      VisibilityTimeout: 300
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt IngestQueueDLQ.Arn
         maxReceiveCount: 5
-      VisibilityTimeout: 180 # > Lambda timeout
 
+  # Allow S3 -> SQS
   IngestQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
       Queues: [ !Ref IngestQueue ]
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Sid: AllowS3ToSend
+          - Sid: AllowS3SendMessage
             Effect: Allow
-            Principal:
-              Service: s3.amazonaws.com
-            Action: 'SQS:SendMessage'
+            Principal: { Service: s3.amazonaws.com }
+            Action: sqs:SendMessage
             Resource: !GetAtt IngestQueue.Arn
-            # (No SourceArn condition -> avoids circular dependency. Fine for internal use.)
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt IngestBucket.Arn
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
 
+  # S3 bucket with inline notification (only .json)
   IngestBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
-      # No explicit BucketName -> CFN generates a unique lowercase name (best practice for S3).
+      BucketName: !If [UseProvidedBucketName, !Ref ReviewsBucketName, !Ref "AWS::NoValue"]
       NotificationConfiguration:
         QueueConfigurations:
-          - Event: 's3:ObjectCreated:*'
+          - Event: "s3:ObjectCreated:*"
             Queue: !GetAtt IngestQueue.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: ".json"
+                  # Optional folder scope:
+                  # - Name: prefix
+                  #   Value: "ingest/"
+      # Optional hardening later:
+      # VersioningConfiguration: { Status: Enabled }
+      # BucketEncryption:
+      #   ServerSideEncryptionConfiguration:
+      #     - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
 
+  # SQS consumer Lambda (reads S3 JSON, writes DB)
   ReviewIngestFromSqs:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
       Handler: com.zuzu.review.ReviewIngestFromSqsHandler::handleRequest
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - SQSPollerPolicy:
-            QueueName: !Sub "${AWS::StackName}-review-ingest-queue"
-        - S3ReadPolicy:
-            BucketName: !Ref IngestBucket
+      Description: Consume SQS messages with S3 event, upsert into DB
       Events:
         FromQueue:
           Type: SQS
@@ -73,34 +117,58 @@ Resources:
             Queue: !GetAtt IngestQueue.Arn
             BatchSize: 1
             MaximumBatchingWindowInSeconds: 0
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt IngestQueue.QueueName
+        - S3ReadPolicy:
+            BucketName: !Ref IngestBucket
+        - AWSLambdaBasicExecutionRole
 
+  # GET /reviews API Lambda
   ReviewApi:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
       Handler: com.zuzu.review.ReviewQueryHandler::handleRequest
-      Policies:
-        - AWSLambdaBasicExecutionRole
+      Description: Query reviews for a hotel (GET /reviews?hotelId=123)
       Events:
-        ApiEvent:
+        ApiGetReviews:
           Type: Api
           Properties:
             Path: /reviews
-            Method: get
+            Method: GET
+      Policies:
+        - AWSLambdaBasicExecutionRole
 
 Outputs:
   IngestBucketName:
+    Description: S3 bucket for review JSON uploads
     Value: !Ref IngestBucket
-    Description: S3 bucket receiving review JSON files
+
   IngestQueueUrl:
-    Value: !Ref IngestQueue
     Description: URL of the SQS queue
+    Value: !Ref IngestQueue
+
   IngestQueueArn:
-    Value: !GetAtt IngestQueue.Arn
     Description: ARN of the SQS queue
+    Value: !GetAtt IngestQueue.Arn
+
   SqsIngestFunctionName:
-    Value: !Ref ReviewIngestFromSqs
     Description: Name of the SQS consumer Lambda
+    Value: !Ref ReviewIngestFromSqs
+
   ReviewApiFunctionName:
-    Value: !Ref ReviewApi
     Description: Name of the Review query Lambda
+    Value: !Ref ReviewApi
+
+  ReviewApiUrl:
+    Description: Invoke URL for GET /reviews
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/reviews"
+
+  TailReviewApiLogsCmd:
+    Description: Tail API logs (last 45m; only errors/exceptions)
+    Value: !Sub "aws logs tail /aws/lambda/${ReviewApi} --region ${AWS::Region} --since 45m --follow --filter-pattern \"?ERROR ?Exception ?Traceback\""
+
+  TailSqsIngestLogsCmd:
+    Description: Tail SQS consumer logs (last 45m; only errors/exceptions)
+    Value: !Sub "aws logs tail /aws/lambda/${ReviewIngestFromSqs} --region ${AWS::Region} --since 45m --follow --filter-pattern \"?ERROR ?Exception ?Traceback\""
