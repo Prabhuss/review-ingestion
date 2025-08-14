@@ -45,17 +45,6 @@ public class ReviewRepository {
     }
   }
 
-  // Legacy method for backward compatibility
-  public void upsertHotel(Long hotelId, String hotelName){
-    if (hotelId == null) return;
-    EntityManager em = em();
-    EntityTransaction tx = em.getTransaction();
-    try {
-      tx.begin();
-      upsertHotel(em, hotelId, hotelName);
-      tx.commit();
-    } catch (RuntimeException ex){ if (tx.isActive()) tx.rollback(); throw ex; } finally { em.close(); }
-  }
 
   public void upsertProvider(EntityManager em, Integer providerId, String providerName){
     if (providerId == null) return;
@@ -70,34 +59,12 @@ public class ReviewRepository {
     }
   }
 
-  // Legacy method for backward compatibility
-  public void upsertProvider(Integer providerId, String providerName){
-    if (providerId == null) return;
-    EntityManager em = em();
-    EntityTransaction tx = em.getTransaction();
-    try {
-      tx.begin();
-      upsertProvider(em, providerId, providerName);
-      tx.commit();
-    } catch (RuntimeException ex){ if (tx.isActive()) tx.rollback(); throw ex; } finally { em.close(); }
-  }
 
   public Long insertReviewer(EntityManager em, ReviewerEntity r){
     em.persist(r);
     return r.getReviewerId();
   }
 
-  // Legacy method for backward compatibility
-  public Long insertReviewer(ReviewerEntity r){
-    EntityManager em = em();
-    EntityTransaction tx = em.getTransaction();
-    try {
-      tx.begin();
-      Long result = insertReviewer(em, r);
-      tx.commit();
-      return result;
-    } catch (RuntimeException ex){ if (tx.isActive()) tx.rollback(); throw ex; } finally { em.close(); }
-  }
 
   public Long upsertReview(EntityManager em, ReviewEntity e){
     ReviewId reviewId = new ReviewId(e.getHotelReviewId(), e.getProviderId());
@@ -133,17 +100,6 @@ public class ReviewRepository {
     return e.getHotelReviewId();
   }
 
-  // Legacy method for backward compatibility
-  public Long upsertReview(ReviewEntity e){
-    EntityManager em = em();
-    EntityTransaction tx = em.getTransaction();
-    try {
-      tx.begin();
-      Long result = upsertReview(em, e);
-      tx.commit();
-      return result;
-    } catch (RuntimeException ex){ if (tx.isActive()) tx.rollback(); throw ex; } finally { em.close(); }
-  }
 
   public void upsertOverall(EntityManager em, HotelProviderOverallEntity e){
     HotelProviderOverallEntity existing = em.createQuery(
@@ -161,16 +117,6 @@ public class ReviewRepository {
     }
   }
 
-  // Legacy method for backward compatibility
-  public void upsertOverall(HotelProviderOverallEntity e){
-    EntityManager em = em();
-    EntityTransaction tx = em.getTransaction();
-    try {
-      tx.begin();
-      upsertOverall(em, e);
-      tx.commit();
-    } catch (RuntimeException ex){ if (tx.isActive()) tx.rollback(); throw ex; } finally { em.close(); }
-  }
 
   public void upsertGrade(EntityManager em, HotelProviderGradeEntity e){
     HotelProviderGradeEntity existing = em.createQuery(
@@ -188,22 +134,7 @@ public class ReviewRepository {
     }
   }
 
-  // Legacy method for backward compatibility
-  public void upsertGrade(HotelProviderGradeEntity e){
-    EntityManager em = em();
-    EntityTransaction tx = em.getTransaction();
-    try {
-      tx.begin();
-      upsertGrade(em, e);
-      tx.commit();
-    } catch (RuntimeException ex){ if (tx.isActive()) tx.rollback(); throw ex; } finally { em.close(); }
-  }
 
-  public long count(){
-    EntityManager em = em();
-    try { return em.createQuery("select count(r) from ReviewEntity r", Long.class).getSingleResult(); }
-    finally { em.close(); }
-  }
 
   public List<ReviewEntity> findByHotelId(long hotelId){
     EntityManager em = em();
@@ -215,19 +146,7 @@ public class ReviewRepository {
     } finally { em.close(); }
   }
 
-  public ReviewEntity findReview(EntityManager em, Long hotelReviewId, Integer providerId){
-    if (hotelReviewId == null || providerId == null) return null;
-    ReviewId reviewId = new ReviewId(hotelReviewId, providerId);
-    return em.find(ReviewEntity.class, reviewId);
-  }
 
-  // Legacy method for backward compatibility
-  public ReviewEntity findReview(Long hotelReviewId, Integer providerId){
-    if (hotelReviewId == null || providerId == null) return null;
-    EntityManager em = em();
-    try { return findReview(em, hotelReviewId, providerId); }
-    finally { em.close(); }
-  }
 
   public Long findExistingReviewerId(EntityManager em, ReviewerEntity r){
     return em.createQuery(
@@ -247,13 +166,6 @@ public class ReviewRepository {
       .getResultStream().findFirst().orElse(null);
   }
 
-  // Legacy method for backward compatibility
-  public Long findExistingReviewerId(ReviewerEntity r){
-    EntityManager em = em();
-    try {
-      return findExistingReviewerId(em, r);
-    } finally { em.close(); }
-  }
 
   public Long upsertReviewer(EntityManager em, ReviewerEntity r){
     Long existingId = findExistingReviewerId(em, r);
@@ -261,11 +173,5 @@ public class ReviewRepository {
     return insertReviewer(em, r);
   }
 
-  // Legacy method for backward compatibility
-  public Long upsertReviewer(ReviewerEntity r){
-    Long existingId = findExistingReviewerId(r);
-    if (existingId != null) return existingId;
-    return insertReviewer(r);
-  }
 }
 

@@ -92,8 +92,6 @@ public class ReviewPersistenceService {
         reviewer.setReviewGroupName(data.getReviewGroupName());
         // Map to existing fields in ReviewerEntity
         reviewer.setReviewerReviewedCount(data.getMemberContributions());
-        // Note: Some fields from ReviewData don't exist in ReviewerEntity
-        // (helpfulVotes, averageScore, totalReviewsCount, reviewerLevel, isVerified)
         return reviewer;
     }
 

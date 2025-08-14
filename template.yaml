@@ -9,9 +9,9 @@ Globals:
     Timeout: 120
     Environment:
       Variables:
-        DB_URL: jdbc:postgresql://XXXX
-        DB_USER: AAAAAAAA
-        DB_PASSWORD: YYYYYYYY
+        DB_URL: jdbc:postgresql://ep-mute-morning-a93nx86o-pooler.gwc.azure.neon.tech:5432/neondb?sslmode=require
+        DB_USER: neondb_owner
+        DB_PASSWORD: npg_dBXJbY0lF2Qr
         HIBERNATE_DDL: validate
         # For schema updates, temporarily change to 'update' then back to 'validate'
 
