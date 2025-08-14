@@ -64,18 +64,11 @@ S3 Object (JSON)
 
 ---
 
-## Database Configuration (SAM Parameters)
-
-| Parameter      | Example                                          | Notes                                     |
-| -------------- | ------------------------------------------------ | ----------------------------------------- |
-| `DbUrl`        | `jdbc:postgresql://host:5432/db?sslmode=require` | Full JDBC URL                             |
-| `DbUser`       | `appuser`                                        | DB username                               |
-| `DbPassword`   | `******`                                         | DB password (NoEcho)                      |
-| `HibernateDdl` | `validate`                                       | `validate` (prod), `update` (dev), `none` |
-| `LogSql`       | `false`                                          | `true` for SQL debugging                  |
-| `DbPoolSize`   | `2`                                              | Hikari max pool size                      |
-| `DbMinIdle`    | `0`                                              | Hikari min idle connections               |
-
+## Database Configuration
+Please fill Database details in template.yaml with actual value
+DB_URL: jdbc:postgresql://XXXX
+DB_USER: AAAAAAAA
+DB_PASSWORD: YYYYYYYY
 ---
 
 ## Build & Deploy
@@ -115,8 +108,6 @@ You’ll be prompted for all parameters. AWS SAM will remember your answers for 
 * Structured logging with SLF4J.
 * Logs key IDs (file key, hotel id, review id) for traceability.
 * Use CloudWatch Logs Insights for quick filtering.
-
----
 
 ---
 
