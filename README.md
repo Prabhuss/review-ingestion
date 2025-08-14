@@ -116,16 +116,5 @@ You’ll be prompted for all parameters. AWS SAM will remember your answers for 
 
 ---
 
-## Logging
-
-* Structured logging with SLF4J.
-* Logs key IDs (file key, hotel id, review id) for traceability.
-* Use CloudWatch Logs Insights for quick filtering.
-
----
-
-## License
-
-Proprietary – All rights reserved.
 
 
