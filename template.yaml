@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Zuzu Review Ingestion and Query Lambdas (S3 -> SQS -> Lambda -> Neon)
+
+Globals:
+  Function:
+    Runtime: java21
+    MemorySize: 1536
+    Timeout: 120
+    Environment:
+      Variables:
+        DB_URL: jdbc:postgresql://ep-mute-morning-a93nx86o-pooler.gwc.azure.neon.tech:5432/neondb?sslmode=require
+        DB_USER: neondb_owner
+        DB_PASSWORD: npg_dBXJbY0lF2Qr
+        HIBERNATE_DDL: validate
+        # For schema updates, temporarily change to 'update' then back to 'validate'
+
+Resources:
+  IngestQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-review-ingest-dlq"
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  IngestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-review-ingest-queue"
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngestQueueDLQ.Arn
+        maxReceiveCount: 5
+      VisibilityTimeout: 180 # > Lambda timeout
+
+  IngestQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [ !Ref IngestQueue ]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowS3ToSend
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: 'SQS:SendMessage'
+            Resource: !GetAtt IngestQueue.Arn
+            # (No SourceArn condition -> avoids circular dependency. Fine for internal use.)
+
+  IngestBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # No explicit BucketName -> CFN generates a unique lowercase name (best practice for S3).
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Queue: !GetAtt IngestQueue.Arn
+
+  ReviewIngestFromSqs:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: com.zuzu.review.ReviewIngestFromSqsHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SQSPollerPolicy:
+            QueueName: !Sub "${AWS::StackName}-review-ingest-queue"
+        - S3ReadPolicy:
+            BucketName: !Ref IngestBucket
+      Events:
+        FromQueue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt IngestQueue.Arn
+            BatchSize: 1
+            MaximumBatchingWindowInSeconds: 0
+
+  ReviewApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: com.zuzu.review.ReviewQueryHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /reviews
+            Method: get
+
+Outputs:
+  IngestBucketName:
+    Value: !Ref IngestBucket
+    Description: S3 bucket receiving review JSON files
+  IngestQueueUrl:
+    Value: !Ref IngestQueue
+    Description: URL of the SQS queue
+  IngestQueueArn:
+    Value: !GetAtt IngestQueue.Arn
+    Description: ARN of the SQS queue
+  SqsIngestFunctionName:
+    Value: !Ref ReviewIngestFromSqs
+    Description: Name of the SQS consumer Lambda
+  ReviewApiFunctionName:
+    Value: !Ref ReviewApi
+    Description: Name of the Review query Lambda

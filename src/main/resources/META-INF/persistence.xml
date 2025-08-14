@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd"
+             version="3.1">
+  <persistence-unit name="reviewsPU" transaction-type="RESOURCE_LOCAL">
+    <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+    <!-- Explicitly list entities to avoid classpath scanning differences -->
+    <class>com.zuzu.review.HotelEntity</class>
+    <class>com.zuzu.review.ProviderEntity</class>
+    <class>com.zuzu.review.ReviewerEntity</class>
+    <class>com.zuzu.review.ReviewEntity</class>
+    <class>com.zuzu.review.ReviewId</class>
+    <class>com.zuzu.review.HotelProviderOverallEntity</class>
+    <class>com.zuzu.review.HotelProviderGradeEntity</class>
+
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
+
+    <!-- JDBC and Hibernate settings are supplied programmatically in OrmConfig -->
+    <properties>
+      <!-- Intentionally minimal; OrmConfig sets DataSource, dialect, ddl, etc. -->
+    </properties>
+  </persistence-unit>
+</persistence>

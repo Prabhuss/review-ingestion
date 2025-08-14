@@ -1,0 +1,12 @@
+{
+  "hotelId": 555,
+  "platform": "Booking",
+  "comment": {
+    "hotelReviewId": 123450001,
+    "providerId": 101,
+    "formattedRating": "8.7",
+    "reviewComments": "Great location and clean rooms.",
+    "reviewDate": "2024-12-01T15:30:00+02:00",
+    "translateSource": "en"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "hotelId": 10984,
+  "platform": "Agoda",
+  "hotelName": "Oscar Saigon Hotel",
+  "comment": {
+    "isShowReviewResponse": false,
+    "hotelReviewId": 948353737,
+    "providerId": 332,
+    "rating": 6.4,
+    "checkInDateMonthAndYear": "April 2025",
+    "encryptedReviewData": "cZwJ6a6ZoFX2W5WwVXaJkA==",
+    "formattedRating": "6.4",
+    "formattedReviewDate": "April 10, 2025",
+    "ratingText": "Good",
+    "responderName": "Oscar Saigon Hotel",
+    "responseDateText": "",
+    "responseTranslateSource": "en",
+    "reviewComments": "Hotel room is basic and very small. not much like pictures. few areas were getting repaired. but since location is so accessible from all main areas in district-1, i would prefer to stay here again. Staff was good.",
+    "reviewNegatives": "",
+    "reviewPositives": "",
+    "reviewProviderLogo": "",
+    "reviewProviderText": "Agoda",
+    "reviewTitle": "Perfect location and safe but hotel under renovation ",
+    "translateSource": "en",
+    "translateTarget": "en",
+    "reviewDate": "2025-04-10T05:37:00+07:00",
+    "reviewerInfo": {
+      "countryName": "India",
+      "displayMemberName": "********",
+      "flagName": "in",
+      "reviewGroupName": "Solo traveler",
+      "roomTypeName": "Premium Deluxe Double Room",
+      "countryId": 35,
+      "lengthOfStay": 2,
+      "reviewGroupId": 3,
+      "roomTypeId": 0,
+      "reviewerReviewedCount": 0,
+      "isExpertReviewer": false,
+      "isShowGlobalIcon": false,
+      "isShowReviewedCount": false
+    },
+    "originalTitle": "",
+    "originalComment": "",
+    "formattedResponseDate": ""
+  },
+  "overallByProviders": [
+    {
+      "providerId": 332,
+      "provider": "Agoda",
+      "overallScore": 7.9,
+      "reviewCount": 7070,
+      "grades": {
+        "Cleanliness": 7.7,
+        "Facilities": 7.2,
+        "Location": 9.1,
+        "Room comfort and quality": 7.5,
+        "Service": 7.8,
+        "Value for money": 7.8
+      }
+    }
+  ]
+}
+

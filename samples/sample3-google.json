@@ -1,0 +1,12 @@
+{
+  "hotelId": 777,
+  "platform": "Google",
+  "comment": {
+    "hotelReviewId": 555666777,
+    "providerId": 900,
+    "reviewComments": "Nice breakfast, a bit noisy at night.",
+    "reviewDate": "2025-01-20T09:00:00+05:30",
+    "translateSource": "id",
+    "formattedRating": "4.2"
+  }
+}
