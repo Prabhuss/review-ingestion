@@ -65,11 +65,14 @@ S3 Object (JSON)
 ---
 
 ## Database Configuration
+
 Please fill Database details in template.yaml with actual value
-DB_URL: jdbc:postgresql://XXXX
-DB_USER: AAAAAAAA
-DB_PASSWORD: YYYYYYYY
----
+
+-DB_URL: jdbc:postgresql://XXXX
+
+-DB_USER: AAAAAAAA
+
+-DB_PASSWORD: YYYYYYYY
 
 ## Build & Deploy
 
@@ -92,6 +95,15 @@ You’ll be prompted for all parameters. AWS SAM will remember your answers for 
 ## Example Input JSON
 
 ### Can we found in Samples folder
+
+# Quick Deployment and Testing
+- Configure DB Details in Template.yaml file
+- Make Build do deployment
+- aws s3 cp sample1-agoda.json s3://review-dev-30-ingestbucket-tehrhptcoscu/
+- aws logs tail /aws/lambda/review-dev-30-ReviewIngestFromSqs-kqrvU1sqd7rE --region ap-southeast-1 --since 5m --follow
+- aws logs tail /aws/lambda/review-dev-30-ReviewApi-BpAdJAgz3noD --region ap-southeast-1 --since 5m --follow
+
+
 
 ---
 
